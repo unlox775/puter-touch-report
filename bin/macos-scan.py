@@ -100,7 +100,7 @@ IGNORE_USER_FOLDERS = [
     "Screen Savers","ScreenRecordings","Scripts","Services","Sharing","Shortcuts",
     "Sounds","Spelling","Spotlight","Staging","StatusKit","Stickers","studentd",
     "Suggestions","SyncedPreferences","Translation","Trial","UnifiedAssetFramework",
-    "Weather","WebKit"
+    "Weather","WebKit","Animoji","TV",".BurpSuite",".config","venv","Public"
     ]
 
 # Patterns to ignore (e.g. names starting with a dot)
@@ -138,14 +138,13 @@ def crawl_remaining_paths(base="/"):
 
         print(f"=========> Scanning directory: {root}\n")
         # prinf files
-        print(f"Files: {files}\n")
-        print(f"Dirs: {dirs}\n")
+        # print(f"Files: {files}\n")
+        # print(f"Dirs: {dirs}\n")
         normalized_root = os.path.normpath(root)
         if normalized_root in scanned_paths:
             print(f"   X==X Skipping already scanned path: {normalized_root}")
             dirs[:] = []  # do not descend further
             continue
-        sys.stdout.write(f"Scanning directory: {normalized_root} \n")
         sys.stdout.flush()
         # Process files (debug output only)
         for file in files:
@@ -179,6 +178,11 @@ def crawl_remaining_paths(base="/"):
                     # if under a User directory, record the gray area for that user
                     if normalized_d.startswith("/Users/"):
                         user = normalized_d.split("/")[2]
+                        path_within_user = normalized_d[len(f"/Users/{user}/"):]
+                        if path_within_user in IGNORE_USER_FOLDERS or path_within_user.startswith("com."):
+                            record_ignore_path(os.path.join(normalized_d, path_within_user))
+                            continue
+
                         record_user_gray(user, normalized_d)
                     else:
                         record_top_level_gray(normalized_d)
@@ -517,7 +521,7 @@ def write_reports():
 
             f.write("\nAI Prompt: Below is a listing of some things found in this user's home directory.\n")
             for folder, contents in folders.items():
-                if folder == "/Library":
+                if not contents or folder == "/Library" or folder == "/.Trash":
                     continue
 
                 f.write(f"\n-- ~{folder} (top-level listing) --\n")
